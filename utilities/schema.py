@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 # Base properties shared across schemas
 class UserBase(BaseModel):
@@ -13,10 +13,17 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    role: str
 
     class Config:
         # Crucial: Allows Pydantic to read SQLAlchemy ORM models natively
-        from_attributes = True 
+        from_attributes = True
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def extract_role_name(cls, value):
+        # Accepts either the related Role ORM object or a plain string.
+        return getattr(value, "role", value)
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -26,3 +33,10 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class DocumentUploadResponse(BaseModel):
+    filename: str
+    content_type: str
+    size_bytes: int
+    uploaded_by: str
